@@ -57,22 +57,6 @@ public class OpenApiConfig {
 								.url("https://api.iub-university.com")
 								.description("Serveur de production")
 				))
-				.tags(List.of(
-						new Tag()
-								.name("Écoles Partenaires")
-								.description("Gestion des partenariats avec les universités internationales"),
-						new Tag()
-								.name("Entreprises Partenaires")
-								.description("Gestion des partenariats avec les entreprises"),
-						new Tag()
-								.name("Directeur")
-								.description("Informations et messages du directeur de l'université"),
-						new Tag()
-								.name("Actualités")
-								.description("Gestion des actualités et événements universitaires"),
-						new Tag()
-								.name("Formations")
-								.description("Catalogue des formations proposées par l'IUB")
-				));
+				;
 	}
 }
