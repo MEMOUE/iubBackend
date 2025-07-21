@@ -10,7 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 @RestController
-@RequestMapping("/ecoles-partenaires")
+@RequestMapping("/api/ecoles-partenaires")
 @RequiredArgsConstructor
 @Slf4j
 @CrossOrigin(origins = "${cors.allowed-origins}")

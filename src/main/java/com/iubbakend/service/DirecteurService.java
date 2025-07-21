@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -32,6 +33,13 @@ public class DirecteurService {
 
 	public Directeur save(Directeur directeur) {
 		log.debug("Sauvegarde informations directeur: {}", directeur.getNom());
+
+		// Désactiver tous les autres directeurs avant d'enregistrer le nouveau
+		if (directeur.getActif() == null || directeur.getActif()) {
+			desactiverTousLesDirecteurs();
+			directeur.setActif(true);
+		}
+
 		return repository.save(directeur);
 	}
 
@@ -40,6 +48,11 @@ public class DirecteurService {
 
 		return repository.findById(id)
 				.map(existingDirecteur -> {
+					// Si on active ce directeur, désactiver tous les autres
+					if (directeurDetails.getActif() != null && directeurDetails.getActif() && !existingDirecteur.getActif()) {
+						desactiverTousLesDirecteurs();
+					}
+
 					existingDirecteur.setNom(directeurDetails.getNom());
 					existingDirecteur.setTitre(directeurDetails.getTitre());
 					existingDirecteur.setPhotoUrl(directeurDetails.getPhotoUrl());
@@ -53,8 +66,24 @@ public class DirecteurService {
 					existingDirecteur.setTelephone(directeurDetails.getTelephone());
 					existingDirecteur.setAdresse(directeurDetails.getAdresse());
 					existingDirecteur.setLinkedinUrl(directeurDetails.getLinkedinUrl());
+					existingDirecteur.setActif(directeurDetails.getActif() != null ? directeurDetails.getActif() : true);
 
 					return repository.save(existingDirecteur);
+				})
+				.orElseThrow(() -> new RuntimeException("Directeur non trouvé avec l'ID: " + id));
+	}
+
+	public Directeur activerDirecteur(Long id) {
+		log.debug("Activation du directeur ID: {}", id);
+
+		return repository.findById(id)
+				.map(directeur -> {
+					// Désactiver tous les autres directeurs
+					desactiverTousLesDirecteurs();
+
+					// Activer le directeur sélectionné
+					directeur.setActif(true);
+					return repository.save(directeur);
 				})
 				.orElseThrow(() -> new RuntimeException("Directeur non trouvé avec l'ID: " + id));
 	}
@@ -71,5 +100,45 @@ public class DirecteurService {
 							throw new RuntimeException("Directeur non trouvé avec l'ID: " + id);
 						}
 				);
+	}
+
+	/**
+	 * Désactive tous les directeurs actuellement actifs
+	 */
+	private void desactiverTousLesDirecteurs() {
+		log.debug("Désactivation de tous les directeurs actifs");
+		List<Directeur> directeursActifs = repository.findAll().stream()
+				.filter(Directeur::getActif)
+				.toList();
+
+		directeursActifs.forEach(directeur -> {
+			directeur.setActif(false);
+			repository.save(directeur);
+		});
+
+		log.debug("{} directeur(s) désactivé(s)", directeursActifs.size());
+	}
+
+	/**
+	 * Vérifie s'il existe déjà un directeur actif
+	 */
+	public boolean existeDirecteurActif() {
+		return repository.findFirstByActifTrueOrderByCreatedAtDesc().isPresent();
+	}
+
+	/**
+	 * Compte le nombre total de directeurs (actifs et inactifs)
+	 */
+	public long countAll() {
+		return repository.count();
+	}
+
+	/**
+	 * Compte le nombre de directeurs actifs (devrait toujours être 0 ou 1)
+	 */
+	public long countActifs() {
+		return repository.findAll().stream()
+				.filter(Directeur::getActif)
+				.count();
 	}
 }

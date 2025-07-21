@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.util.List;
 @RestController
-@RequestMapping("/actualites")
+@RequestMapping("/api/actualites")
 @RequiredArgsConstructor
 @Slf4j
 @CrossOrigin(origins = "${cors.allowed-origins}")
