@@ -7,6 +7,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfigurationSource;
+
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
@@ -29,19 +30,31 @@ public class SecurityConfig {
 				// Configuration des autorisations
 				.authorizeHttpRequests(auth -> auth
 						// Autoriser tous les endpoints de l'API publiquement
-						.requestMatchers("/api/**").permitAll()
+						.requestMatchers("/api/actualites/**").permitAll()
+						.requestMatchers("/api/directeur/**").permitAll()
+						.requestMatchers("/api/ecoles-partenaires/**").permitAll()
+						.requestMatchers("/api/entreprises-partenaires/**").permitAll()
+						.requestMatchers("/api/formations/**").permitAll()
+						.requestMatchers("/api/upload/**").permitAll()
+
+						// Autoriser l'accès aux fichiers uploadés
+						.requestMatchers("/uploads/**").permitAll()
 
 						// Autoriser Swagger UI et documentation
 						.requestMatchers("/swagger-ui/**").permitAll()
 						.requestMatchers("/swagger-ui.html").permitAll()
-						.requestMatchers("/api-docs/**").permitAll()
 						.requestMatchers("/v3/api-docs/**").permitAll()
+						.requestMatchers("/api-docs/**").permitAll()
 
 						// Autoriser les ressources statiques
 						.requestMatchers("/css/**", "/js/**", "/images/**").permitAll()
+						.requestMatchers("/static/**").permitAll()
 
-						// Toutes les autres requêtes nécessitent une authentification
-						.anyRequest().authenticated()
+						// Autoriser les requêtes OPTIONS (preflight CORS)
+						.requestMatchers("OPTIONS", "/**").permitAll()
+
+						// Toutes les autres requêtes sont autorisées pour le développement
+						.anyRequest().permitAll()
 				)
 
 				// Désactiver l'authentification par défaut pour le développement
