@@ -1,10 +1,5 @@
 package com.iubbakend.controller;
 
-import com.iubbakend.entity.Actualite;
-import com.iubbakend.entity.Directeur;
-import com.iubbakend.service.ActualiteService;
-import com.iubbakend.service.DirecteurService;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,6 +14,8 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.UUID;
 
 @RestController
@@ -34,69 +31,45 @@ public class UploadController {
 	@Value("${app.upload.directeurs.dir}")
 	private String directeurUploadDir;
 
-	private final ActualiteService actualiteService;
-	private final DirecteurService directeurService;
-
 	// Types de fichiers autorisés
 	private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList("jpg", "jpeg", "png", "gif", "webp");
 	private static final long MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
-	@PostMapping("/actualite")
-	public ResponseEntity<Actualite> uploadActualite(
-			@RequestPart("actualite") @Valid Actualite actualite,
-			@RequestPart("file") MultipartFile file
-	) {
-		log.info("Upload d'image pour actualité: {}", actualite.getTitre());
+	@PostMapping("/actualite/image")
+	public ResponseEntity<Map<String, Object>> uploadActualiteImage(@RequestParam("file") MultipartFile file) {
+		log.info("Upload d'image pour actualité: {}", file.getOriginalFilename());
 
-		return handleFileUpload(
-				file,
-				actualiteUploadDir,
-				"/uploads/actualites/",
-				"actualite",
-				(path) -> {
-					actualite.setImageUrl(path);
-					return actualiteService.save(actualite);
-				}
-		);
+		return handleFileUpload(file, actualiteUploadDir, "/uploads/actualites/", "actualite");
 	}
 
-	@PostMapping("/directeur")
-	public ResponseEntity<Directeur> uploadDirecteur(
-			@RequestPart("directeur") @Valid Directeur directeur,
-			@RequestPart("file") MultipartFile file
-	) {
-		log.info("Upload de photo pour directeur: {}", directeur.getNom());
+	@PostMapping("/directeur/photo")
+	public ResponseEntity<Map<String, Object>> uploadDirecteurPhoto(@RequestParam("file") MultipartFile file) {
+		log.info("Upload de photo pour directeur: {}", file.getOriginalFilename());
 
-		return handleFileUpload(
-				file,
-				directeurUploadDir,
-				"/uploads/directeurs/",
-				"directeur",
-				(path) -> {
-					directeur.setPhotoUrl(path);
-					return directeurService.save(directeur);
-				}
-		);
+		return handleFileUpload(file, directeurUploadDir, "/uploads/directeurs/", "directeur");
 	}
 
-	private <T> ResponseEntity<T> handleFileUpload(
+	private ResponseEntity<Map<String, Object>> handleFileUpload(
 			MultipartFile file,
 			String uploadDir,
 			String urlPrefix,
-			String entityType,
-			java.util.function.Function<String, T> saveEntity
+			String entityType
 	) {
+		Map<String, Object> response = new HashMap<>();
+
 		try {
 			// Validation du fichier
 			if (file.isEmpty()) {
 				log.error("Fichier vide reçu pour {}", entityType);
-				return ResponseEntity.badRequest().build();
+				response.put("error", "Fichier vide");
+				return ResponseEntity.badRequest().body(response);
 			}
 
 			// Vérification de la taille
 			if (file.getSize() > MAX_FILE_SIZE) {
 				log.error("Fichier trop volumineux: {} bytes pour {}", file.getSize(), entityType);
-				return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).build();
+				response.put("error", "Fichier trop volumineux (max 5MB)");
+				return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(response);
 			}
 
 			// Validation de l'extension
@@ -105,7 +78,8 @@ public class UploadController {
 
 			if (!ALLOWED_EXTENSIONS.contains(extension)) {
 				log.error("Extension de fichier non autorisée: {} pour {}", extension, entityType);
-				return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).build();
+				response.put("error", "Type de fichier non autorisé. Utilisez: " + String.join(", ", ALLOWED_EXTENSIONS));
+				return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).body(response);
 			}
 
 			// Génération d'un nom de fichier unique
@@ -129,18 +103,24 @@ public class UploadController {
 			// URL d'accès au fichier
 			String fileUrl = urlPrefix + filename;
 
-			// Sauvegarde de l'entité avec l'URL du fichier
-			T savedEntity = saveEntity.apply(fileUrl);
+			// Réponse de succès
+			response.put("url", fileUrl);
+			response.put("filename", filename);
+			response.put("originalName", originalFilename);
+			response.put("size", file.getSize());
+			response.put("message", "Fichier uploadé avec succès");
 
 			log.info("Upload réussi pour {}: {}", entityType, filename);
-			return ResponseEntity.status(HttpStatus.CREATED).body(savedEntity);
+			return ResponseEntity.status(HttpStatus.CREATED).body(response);
 
 		} catch (IOException e) {
 			log.error("Erreur I/O lors de l'upload pour {}: {}", entityType, e.getMessage());
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+			response.put("error", "Erreur lors de la sauvegarde du fichier");
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
 		} catch (Exception e) {
 			log.error("Erreur inattendue lors de l'upload pour {}: {}", entityType, e.getMessage());
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+			response.put("error", "Erreur inattendue lors de l'upload");
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
 		}
 	}
 

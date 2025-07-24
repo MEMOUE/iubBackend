@@ -25,7 +25,7 @@ public class Actualite extends BaseEntity {
 	@Column(length = 5000)
 	private String contenu;
 
-	@Column(name = "image_url", columnDefinition = "TEXT", length = 65535)
+	@Column(name = "image_url", length = 5000)
 	private String imageUrl;
 
 	@Column(name = "date_publication")
