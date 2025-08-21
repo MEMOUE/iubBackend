@@ -13,6 +13,7 @@ import java.util.Map;
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
+
 	@ExceptionHandler(MethodArgumentNotValidException.class)
 	public ResponseEntity<Map<String, Object>> handleValidationExceptions(
 			MethodArgumentNotValidException ex) {
