@@ -19,6 +19,21 @@ spring:
       max-request-size: 5MB
       enabled: true
 
+  mail:
+    host: mail.iub-university.com
+    port: 587
+    username: ${EMAIL_USERNAME:secretariat@iub-university.com}
+    password: ${EMAIL_PASSWORD:Secretariat@2025}  # Corrigé
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: false
+          ssl:
+            trust: mail.iub-university.com
+        debug: true
 server:
   port: 8080
 
@@ -33,6 +48,11 @@ app:
       dir: uploads/actualites
     directeurs:
       dir: uploads/directeurs
+
+  email:
+    from: ${EMAIL_FROM:secretariat@iub-university.com}
+    secretariat: secretariat@iub-university.com
+
 
 # Configuration Swagger/OpenAPI
 springdoc:
